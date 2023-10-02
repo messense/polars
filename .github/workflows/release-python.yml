@@ -1,6 +1,8 @@
 name: Release Python
 
 on:
+  pull_request:
+  workflow_dispatch:
   push:
     tags:
       - py-*
@@ -21,15 +23,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-32gb-ram]
-        cpu: [x86-64, aarch64]
-        lts-cpu: [false, true]
-        u64-idx: [false, true]
-        exclude:
-          - os: windows-32gb-ram
-            cpu: aarch64
-          - lts-cpu: true
-            u64-idx: true
+        os: [ubuntu-latest]
+        cpu: [x86-64]
+        lts-cpu: [false]
+        u64-idx: [false]
 
     steps:
       - uses: actions/checkout@v4
@@ -86,7 +83,7 @@ jobs:
           echo "JEMALLOC_SYS_WITH_LG_PAGE=16" >> $GITHUB_ENV
 
       - name: Build wheel
-        uses: PyO3/maturin-action@v1
+        uses: PyO3/maturin-action@fix-212
         with:
           command: build
           target: ${{ steps.target.outputs.target }}
