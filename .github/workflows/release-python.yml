@@ -2,8 +2,6 @@ name: Release Python
 
 on:
   push:
-    tags:
-      - py-*
 
 env:
   PYTHON_VERSION: '3.8'
@@ -51,7 +49,7 @@ jobs:
         run: tomlq -i -t '.dependencies.polars.features += ["bigidx"]' py-polars/Cargo.toml
 
       - name: Create source distribution
-        uses: PyO3/maturin-action@v1
+        uses: PyO3/maturin-action@find-rust-toolchain
         with:
           command: sdist
           args: >
@@ -134,12 +132,9 @@ jobs:
           echo "JEMALLOC_SYS_WITH_LG_PAGE=16" >> $GITHUB_ENV
 
       - name: Build wheel
-        uses: PyO3/maturin-action@v1
+        uses: PyO3/maturin-action@find-rust-toolchain
         with:
           command: build
-          # Temporarily pin Rust toolchain version here due to bug:
-          # https://github.com/PyO3/maturin-action/issues/215
-          rust-toolchain: nightly-2023-10-02
           target: ${{ steps.target.outputs.target }}
           args: >
             --release
@@ -152,48 +147,3 @@ jobs:
         with:
           name: wheels
           path: dist/*.whl
-
-  publish-to-pypi:
-    needs: [create-sdist, build-wheels]
-    environment:
-      name: release-python
-      url: https://pypi.org/project/polars
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-
-    steps:
-      - name: Download sdist
-        uses: actions/download-artifact@v3
-        with:
-          name: sdist
-          path: dist
-
-      - name: Download wheels
-        uses: actions/download-artifact@v3
-        with:
-          name: wheels
-          path: dist
-
-      - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          verbose: true
-
-  update-github-release:
-    needs: create-sdist
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Download sdist
-        uses: actions/download-artifact@v3
-        with:
-          name: sdist
-          path: dist
-
-      - name: Upload sdist as asset to GitHub release
-        uses: svenstaro/upload-release-action@v2
-        with:
-          file: dist/polars-*.tar.gz
-          file_glob: true
-          overwrite: true
